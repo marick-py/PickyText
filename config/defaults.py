@@ -12,7 +12,7 @@ DEFAULTS: dict = {
 
     # Translation
     "translation_endpoint": "https://translate.emptyhead.dev",
-    "translation_api_key": "68b2dbaf-17cd-4aac-bba4-4a33535304a1",
+    "translation_api_key": "67133056-1eb6-450f-b47f-2f80e0e1b3b4",
     "translation_source_language": "auto",
     "translation_target_language": "en",
     "translation_fallback": "argos",  # "argos" | "none"
