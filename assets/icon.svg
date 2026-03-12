@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+
+  <!-- Blue rounded background -->
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#f18826"/>
+
+  <!-- White document / content area -->
+  <rect x="18" y="22" width="80" height="66" rx="8" fill="white" opacity="0.96"/>
+
+  <!-- Text lines (light blue) -->
+  <rect x="26" y="33" width="58" height="5" rx="2.5" fill="#BDD7FF"/>
+  <rect x="26" y="43" width="48" height="5" rx="2.5" fill="#BDD7FF"/>
+  <rect x="26" y="53" width="60" height="5" rx="2.5" fill="#BDD7FF"/>
+  <rect x="26" y="63" width="40" height="5" rx="2.5" fill="#BDD7FF"/>
+  <rect x="26" y="73" width="52" height="5" rx="2.5" fill="#BDD7FF"/>
+
+  <!-- Yellow selection highlight over third line -->
+  <rect x="25" y="50" width="50" height="10" rx="3" fill="#FFD54F" opacity="0.80"/>
+
+  <!-- Cursor arrow (bottom-right, overlapping doc edge) -->
+  <polygon
+    points="75,60 80,100 88,92 96,108 102,104 94,89 105,85"
+    fill="white"
+    stroke="#000000"
+    stroke-width="1.5"
+    stroke-linejoin="round"/>
+
+</svg>

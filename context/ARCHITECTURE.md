@@ -4,7 +4,7 @@
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Language | Python 3.13 | Developer familiarity, ecosystem |
+| Language | Python 3.14 | Developer familiarity, ecosystem |
 | GUI Framework | PyQt6 | Native-feeling widgets, tray support, full theming, performance |
 | Global Hotkey | `keyboard` library | Cross-process hotkey registration on Windows |
 | Screenshot | `mss` | Fastest multi-monitor screenshot lib in Python |
@@ -17,51 +17,57 @@
 | Packaging | PyInstaller | Single-folder or onefile `.exe` |
 | Auto-update | GitHub Releases API | Lightweight, no service required |
 | History Storage | JSON file (rotating, configurable length) | Simple, human-readable, light |
-| Settings Storage | JSON or INI (via `configparser`) | Lightweight, easy to hand-edit |
+| Settings Storage | JSON (`config/settings.py`) | Lightweight, easy to hand-edit, at `%APPDATA%\PickyText\settings.json` |
 
 ## Module Structure
 
+Layout is **flat at repo root** (no `pickytext/` wrapper package).
+
+Status: ✅ implemented · 🔨 stub · 📋 not yet created
+
 ```
-pickytext/
-├── main.py                  # Entry point, tray init, hotkey registration
-├── core/
-│   ├── screenshot.py        # Monitor detection, mss capture
-│   ├── hotkey.py            # Global hotkey listener (background thread)
-│   ├── history.py           # History read/write, rotation
-│   └── updater.py           # GitHub Releases version check
-├── ocr/
-│   ├── engine.py            # OCR router (Windows OCR → Tesseract fallback)
-│   ├── windows_ocr.py       # WinRT OCR wrapper, returns word bounding boxes
-│   └── tesseract_ocr.py     # Optional Tesseract wrapper (same output format)
-├── translation/
-│   ├── engine.py            # Translation router (LibreTranslate → Argos fallback)
-│   ├── libretranslate.py    # HTTP client for VPS LibreTranslate instance
-│   └── argos.py             # Optional local Argos Translate wrapper
-├── ui/
-│   ├── tray.py              # QSystemTrayIcon, context menu
-│   ├── overlay.py           # Main 90% screen overlay window
-│   ├── selection_layer.py   # Rect + polygon drawing canvas (Mode A)
-│   ├── text_layer.py        # Word bounding box overlay, mouse selection (Mode B)
-│   ├── settings_window.py   # Settings dialog
-│   ├── history_popup.py     # History browser popup
-│   └── themes.py            # Light/dark QSS stylesheets
-├── models/
-│   ├── region.py            # Region dataclass (shape, bbox, OCR result, translation)
-│   └── ocr_result.py        # Word + bounding box dataclass
-├── config/
-│   ├── settings.py          # Settings loader/saver
-│   └── defaults.py          # All default values in one place
-└── assets/
-    ├── icon.svg             # Placeholder tray/app icon
-    └── icon.ico             # Compiled icon for Windows
+main.py                      ✅ Entry point, tray + hotkey init, Qt event loop
+core/
+    screenshot.py            ✅ Active-monitor detection (ctypes cursor pos), mss capture
+    hotkey.py                ✅ keyboard lib daemon thread → Qt signal bridge
+    history.py               ✅ JSON rotating store at %APPDATA%\PickyText\history.json
+    updater.py               ✅ daemon thread, GitHub Releases API, semver compare
+ocr/
+    engine.py                ✅ Router: windows → tesseract fallback
+    windows_ocr.py           ✅ WinRT async (winsdk), asyncio.run() in QThread worker
+    tesseract_ocr.py         ✅ pytesseract.image_to_data wrapper (requires optional install)
+translation/
+    engine.py                ✅ Router + separator-trick batching
+    libretranslate.py        ✅ httpx async client + ping()
+    argos.py                 ✅ argostranslate wrapper (requires optional install)
+ui/
+    tray.py                  ✅ QSystemTrayIcon, programmatic fallback icon, context menu
+    overlay.py               ✅ Mode switching (A↔B), OCR worker QThread, spinner, dual top bars
+    selection_layer.py       ✅ Mode A: rect + polygon drawing, resize handles, drag, delete
+    text_layer.py            ✅ Mode B: word bbox rendering, click/drag selection, translation overlay
+    settings_window.py       ✅ Full form: hotkey, OCR, translation, appearance, history
+    history_popup.py         ✅ Splitter list/preview, clear all
+    themes.py                ✅ Dark + Light QSS, ACCENT dict, SELECTION_FILL_ALPHA
+models/
+    region.py                ✅ Region dataclass (RECT | POLYGON, geometry, ocr_words, translation)
+    ocr_result.py            ✅ OcrWord dataclass (text, bbox, confidence, region_id)
+config/
+    settings.py              ✅ JSON load/save at %APPDATA%\PickyText\settings.json
+    defaults.py              ✅ DEFAULTS dict + TESSERACT_LANG_MAP (BCP-47 → tessdata codes)
+assets/
+    icon.svg                 ✅ Blue rounded square, document, text lines, cursor arrow
+    icon.ico                 ✅ Multi-size (16–256px) compiled from icon.svg via cairosvg
+installer/
+    pickytext.iss            📋 Inno Setup script
+pickytext.spec               📋 PyInstaller spec
 ```
 
 ## Data Flow
 
 ```
-[Global Hotkey] 
-    → screenshot.py captures active monitor (mss)
-    → overlay.py opens at 90% screen size
+[Global Hotkey: ctrl+shift+d]
+    → screenshot.py captures active monitor (mss, cursor-based monitor detection)
+    → overlay.py opens at 80% screen size (DWM rounded corners)
     → MODE A: selection_layer.py (draw rects / polygons)
         → user clicks Analyze
         → each region cropped from screenshot

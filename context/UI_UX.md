@@ -3,13 +3,24 @@
 ## Overlay Window (Main Interface)
 
 ### General
-- Opens on hotkey trigger
-- Size: **90% of active monitor** (centered)
+- Opens on hotkey trigger (`ctrl+shift+d` default)
+- Size: **80% of active monitor** (centered) — changed from 90%
 - Always on top, frameless window
-- Background: screenshot image (full monitor capture, cropped/scaled to fit window)
+- **Rounded corners** via Windows 11 DWM (`DwmSetWindowAttribute` / `DWMWCP_ROUND`); silent no-op on older OS
+- Background: screenshot image (full monitor capture, scaled to fill canvas keeping aspect ratio)
 - Two distinct interaction modes: **Mode A (Selection)** and **Mode B (Text)**
 - Smooth mode transition (no window close/reopen)
-- Pressing `Escape` closes the overlay (with confirmation if regions exist)
+- Pressing `Escape` closes the overlay (confirmation if regions exist — 📋 not yet implemented)
+
+### Implementation status (overlay.py)
+- ✅ Frameless window, geometry, screenshot canvas, DWM rounded corners, Escape key
+- ✅ Mode A canvas (`selection_layer.py`) — rubber-band rects, freehand polygons, 8 resize handles, drag, delete
+- ✅ Mode B canvas (`text_layer.py`) — word bbox hit-testing, click/drag selection, translation overlay
+- ✅ Loading spinner overlay between modes (`_SpinnerOverlay`)
+- ✅ Dual top bars (Mode A / Mode B) with stacked widget switching
+- ✅ OCR worker `QThread` — keeps UI responsive during analysis
+- ✅ Translation worker `QThread` — async LibreTranslate/Argos calls
+- ✅ Copy Selected / Copy All / Save to History wired
 
 ---
 

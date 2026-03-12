@@ -9,12 +9,13 @@
 
 ---
 
-## Default Values (`config/defaults.py`)
+## Default Values (`config/defaults.py`) — ✅ Implemented
 
 ```python
 DEFAULTS = {
     # Hotkey
-    "hotkey": "win+shift+d",
+    # NOTE: win+* combos require admin on some Windows configs — use ctrl+shift+*
+    "hotkey": "ctrl+shift+d",
 
     # Screenshot
     "capture_monitor": "active",   # always the monitor where cursor is
@@ -33,7 +34,7 @@ DEFAULTS = {
 
     # UI
     "theme": "dark",               # "dark" | "light"
-    "overlay_size_pct": 90,        # % of monitor
+    "overlay_size_pct": 80,        # % of monitor (changed from 90 — feels less claustrophobic)
 
     # History
     "history_enabled": True,
@@ -48,58 +49,65 @@ DEFAULTS = {
 }
 ```
 
+Also in `defaults.py`: `TESSERACT_LANG_MAP` — BCP-47 → Tesseract langpack code mapping for all 21 supported languages.
+
 ---
 
-## Settings Window (`ui/settings_window.py`)
+## Settings Window (`ui/settings_window.py`) — ✅ Implemented
 
-Single dialog, clean layout. No tabs (keep it simple unless it grows).
+Single dialog, clean layout, `QFormLayout` groups.
 
-### Sections
+### Sections (all implemented)
 
 **Hotkey**
-- Key recorder widget: shows current hotkey, click to record new one
-- Conflict detection: warns if hotkey is already registered system-wide
+- Plain text input showing current combo (e.g. `ctrl+shift+d`)
+- Tip label warning about `win+*` requiring admin
+- On Save: immediately calls `hotkey.update_hotkey()` in main.py
 
 **OCR**
 - Engine: dropdown (`Windows OCR` / `Tesseract`)
-- Source language: dropdown with all supported languages + "Auto-detect"
-- Tesseract path: file picker (only shown if Tesseract selected)
+- Source language: dropdown with 22 languages + "Auto-detect" (BCP-47 codes)
+- Tesseract path: `QLineEdit` + Browse button (`QFileDialog`)
 
 **Translation**
-- Endpoint URL: text input (e.g. `https://translate.yourdomain.com`)
-- API key: text input (optional, hidden by default, eye icon to reveal)
+- Endpoint URL: `QLineEdit`
+- API key: `QLineEdit` with password echo + eye toggle button
 - Source language: dropdown + "Auto-detect"
-- Target language: dropdown
-- [Test Connection] button → pings endpoint, shows latency or error inline
+- Target language: dropdown (no auto option)
+- **[Test Connection]** → `asyncio.run(client.ping())` inline, shows latency or error in red/green
 
 **Appearance**
 - Theme: dropdown (`Dark` / `Light`)
+- Overlay size: `QSpinBox` (40–100%)
+- Start with Windows: `QCheckBox` → writes/removes `HKCU\...\Run\PickyText` on Save
 
 **History**
-- Enable history: toggle
-- Max entries: spinbox (1–100)
-- Save screenshots: toggle
+- Enable history: `QCheckBox`
+- Max entries: `QSpinBox` (1–100)
+- Save screenshot thumbnails: `QCheckBox`
+
+**Footer**: `[Save]` `[Cancel]` — Save writes JSON, emits `settings_saved` signal
+
+### Not yet implemented in settings window
+- Key recorder widget (actual keyboard capture for hotkey recording)
+- Hotkey conflict detection
 - [Clear History] button with confirmation
-
-**System**
-- Start with Windows: toggle (writes/removes registry key)
-- Check for updates on startup: toggle
-
-**Footer**
-- `[Save]` `[Cancel]` — Save writes JSON and applies changes immediately
-- Version string + `[Check for updates now]` link
+- Check for updates toggle
+- Version string + manual update check
 
 ---
 
 ## System Tray (`ui/tray.py`)
 
-### Icon
-- `assets/icon.ico` (compiled from `icon.svg`)
-- Tooltip: `"PickyText — Press Win+Shift+D to capture"`
-- Icon can reflect state: normal vs. "processing" (subtle animation or different icon)
+### Icon — current state
+- `assets/icon.svg` ✅ created (blue rounded square, document, text lines, yellow highlight, cursor arrow)
+- `assets/icon.ico` 📋 not yet compiled (needs cairosvg + Pillow or Inkscape CLI)
+- Fallback: programmatic Qt pixmap drawn at runtime (red circle with "PT" in white) if `.ico` not found
+- Tooltip: `"PickyText — Press ctrl+shift+d to capture"`
+- Processing state icon: 📋 planned
 
 ### Left Click
-- Triggers screenshot immediately (same as hotkey)
+- Currently does nothing (📋 planned: trigger capture on left click)
 
 ### Right Click Menu
 

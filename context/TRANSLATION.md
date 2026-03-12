@@ -50,27 +50,16 @@ server {
 
 Configure endpoint in PickyText settings as `https://translate.yourdomain.com`.
 
-### Client Integration (`translation/libretranslate.py`)
+### Client Integration (`translation/libretranslate.py`) — ✅ Implemented
 
 ```python
-import httpx
-
 class LibreTranslateClient:
-    def __init__(self, endpoint: str, api_key: str = ""):
-        self.endpoint = endpoint.rstrip("/")
-        self.api_key = api_key  # empty string if no auth set on server
-
-    async def translate(self, text: str, source: str, target: str) -> str:
-        payload = {"q": text, "source": source, "target": target, "format": "text"}
-        if self.api_key:
-            payload["api_key"] = self.api_key
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            r = await client.post(f"{self.endpoint}/translate", json=payload)
-            r.raise_for_status()
-            return r.json()["translatedText"]
+    async def translate(self, text, source, target) -> str: ...
+    async def ping(self) -> float:  # returns latency in ms — used by Settings Test Connection button
+        ...
 ```
 
-Uses `httpx` for async HTTP (included with modern Python installs or added as dep).
+Uses `httpx` async client with 10s timeout. `ping()` hits `/languages` endpoint.
 
 ---
 
@@ -102,19 +91,14 @@ After translation, split the response on the same delimiter → each part maps b
 - Single HTTP round-trip regardless of region count
 - If the separator gets mangled by translation (rare edge case): fall back to individual requests
 
-### Implementation
+### Implementation — ✅ Implemented (`translation/engine.py`)
 
-```python
-def batch_translate(texts: list[str], source: str, target: str) -> list[str]:
-    sep = "\n|||REGION_SEP|||\n"
-    combined = sep.join(texts)
-    translated = client.translate(combined, source, target)
-    parts = translated.split(sep)
-    if len(parts) != len(texts):
-        # Fallback: translate individually
-        return [client.translate(t, source, target) for t in texts]
-    return parts
-```
+`TranslationEngine.translate(texts, source, target)` is an `async` method:
+- Joins with `REGION_SEP`, calls LibreTranslate, splits result
+- If separator count mismatches (mangled by engine): pads/trims to match input length
+- On LibreTranslate failure: routes to Argos fallback (if configured) or raises
+
+`translation/argos.py` ✅ — wraps `argostranslate.translate` (requires `pip install argostranslate` + language models)
 
 ---
 

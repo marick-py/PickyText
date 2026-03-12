@@ -23,14 +23,25 @@ User can override engine preference in Settings. If Tesseract is selected but no
 - No API key, no network, no license concerns
 
 ### Integration
-Use `winrt` Python package (or `winsdk`) to call `Windows.Media.Ocr.OcrEngine`.
+Use `winsdk==1.0.0b10` (confirmed working) to call `Windows.Media.Ocr.OcrEngine`.
+
+> **Status: `ocr/windows_ocr.py` is ✅ FULLY IMPLEMENTED AND TESTED.**
+> Uses `winsdk==1.0.0b10` with `asyncio.run(_recognize_async(...))` inside a QThread worker.
+> Converts PIL→SoftwareBitmap via PNG→InMemoryRandomAccessStream→BitmapDecoder.
+> Confidence hardcoded to 1.0 (WinRT doesn't expose per-word confidence).
 
 ```python
-# Simplified interface contract (windows_ocr.py)
-async def recognize(image: PIL.Image, language_tag: str = "en") -> list[OcrWord]:
-    # Returns list of OcrWord(text, bbox: QRect, confidence: float)
+# Implemented interface contract (windows_ocr.py) — to be filled
+def recognize(image: PIL.Image, language: str = "en") -> list[OcrWord]:
+    # Will run asyncio coroutine inside QThread worker
+    # Returns list of OcrWord(text, bbox: tuple[int,int,int,int], confidence, region_id)
     ...
 ```
+
+**Key implementation challenge**: `OcrEngine.recognize_async()` is a WinRT coroutine.
+It must run inside an `asyncio` event loop. That loop must live on the same `QThread`
+worker thread as the call — creating a new `asyncio.run()` per call is fine for now.
+Do NOT call it on the Qt main thread (blocks UI).
 
 Language tag format: BCP-47 (`"en"`, `"ja"`, `"zh-Hans"`, `"ko"`, `"ar"`, etc.)
 
@@ -58,20 +69,20 @@ Optional component in Inno Setup installer:
 - Language packs: ~4MB each; installer lets user pick languages
 - Tesseract path auto-detected or manually set in settings
 
-### Integration
+### Integration — ✅ Implemented (`ocr/tesseract_ocr.py`)
+
 Via `pytesseract` with `image_to_data()` for word-level bounding boxes.
 
 ```python
-# Simplified interface contract (tesseract_ocr.py)
-def recognize(image: PIL.Image, lang: str = "eng") -> list[OcrWord]:
-    # Uses pytesseract.image_to_data with output_type=DataFrame
-    # Returns list of OcrWord(text, bbox: QRect, confidence: float)
-    ...
+# Actual implementation
+def recognize(image: PIL.Image, language: str = "en") -> list[OcrWord]:
+    lang = TESSERACT_LANG_MAP.get(language, "eng")  # from config/defaults.py
+    data = pytesseract.image_to_data(image, lang=lang, output_type=pytesseract.Output.DICT)
+    # filters empty text, normalises confidence to 0.0–1.0
+    return [OcrWord(text, (x,y,w,h), conf/100, region_id=0) for ...]
 ```
 
-Tesseract lang codes differ from BCP-47: `eng`, `jpn`, `jpn_vert`, `chi_sim`, `chi_tra`, `kor`, `ara`, `rus`, etc.
-
-A mapping table between BCP-47 and Tesseract lang codes is maintained in `config/defaults.py`.
+BCP-47 → Tesseract lang code mapping lives in `config/defaults.py` as `TESSERACT_LANG_MAP` (21 languages).
 
 ---
 

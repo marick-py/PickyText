@@ -2,10 +2,10 @@ import asyncio, io
 from PIL import Image, ImageDraw, ImageFont
 from winsdk.windows.media.ocr import OcrEngine
 from winsdk.windows.globalization import Language
-from winsdk.windows.graphics.imaging import BitmapDecoder
+from winsdk.windows.graphics.imaging import BitmapDecoder, SoftwareBitmap
 from winsdk.windows.storage.streams import InMemoryRandomAccessStream, DataWriter
 
-async def pil_to_software_bitmap(img):
+async def pil_to_software_bitmap(img) -> SoftwareBitmap:
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     stream = InMemoryRandomAccessStream()
@@ -17,7 +17,7 @@ async def pil_to_software_bitmap(img):
     decoder = await BitmapDecoder.create_async(stream) # type: ignore
     return await decoder.get_software_bitmap_async()
 
-async def test_bbox():
+async def test_bbox() -> None:
     img = Image.new("RGB", (500, 170), color="white")
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 48)

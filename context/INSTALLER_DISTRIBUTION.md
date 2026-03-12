@@ -1,5 +1,8 @@
 # PickyText — Installer, Distribution & Versioning
 
+> **Status: 📋 Not yet started.** Python source + venv is the development setup.
+> This file contains the planned production build pipeline.
+
 ## Why an Installer
 - Professional Windows uninstall support (`Add or Remove Programs`)
 - Registry entries (startup, app registration) done cleanly
